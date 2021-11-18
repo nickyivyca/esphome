@@ -173,7 +173,7 @@ class LightColorValues {
 
   /// Convert these light color values to an CWWW representation with the given parameters.
   void as_cwww(float *cold_white, float *warm_white, float gamma = 0, bool constant_brightness = false) const {
-    if (this->color_mode_ & ColorCapability::COLD_WARM_WHITE) {
+    if (this->color_mode_ & ColorCapability::COLD_WARM_WHITE || this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) {
       const float cw_level = gamma_correct(this->cold_white_, gamma);
       const float ww_level = gamma_correct(this->warm_white_, gamma);
       const float white_level = gamma_correct(this->state_ * this->brightness_, gamma);

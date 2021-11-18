@@ -141,7 +141,10 @@ LightColorValues LightCall::validate_() {
 
   // Ensure there is always a color mode set
   if (!this->color_mode_.has_value()) {
+
     this->color_mode_ = this->compute_color_mode_();
+    ESP_LOGW(TAG, "needing to calculate color mode %x", this->color_mode_.value());
+
   }
   auto color_mode = *this->color_mode_;
 
@@ -193,14 +196,14 @@ LightColorValues LightCall::validate_() {
   }
 
   // Cold/warm white value exists check
-  if ((this->cold_white_.has_value() && *this->cold_white_ > 0.0f) ||
+  /*if ((this->cold_white_.has_value() && *this->cold_white_ > 0.0f) ||
       (this->warm_white_.has_value() && *this->warm_white_ > 0.0f)) {
     if (!(color_mode & ColorCapability::COLD_WARM_WHITE)) {
       ESP_LOGW(TAG, "'%s' - This color mode does not support setting cold/warm white value!", name);
       this->cold_white_.reset();
       this->warm_white_.reset();
     }
-  }
+  }*/
 
 #define VALIDATE_RANGE_(name_, upper_name, min, max) \
   if (name_##_.has_value()) { \
@@ -234,10 +237,10 @@ LightColorValues LightCall::validate_() {
   }
 
   // Set color brightness to 100% if currently zero and a color is set.
-  if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
+  /*if (this->red_.has_value() || this->green_.has_value() || this->blue_.has_value()) {
     if (!this->color_brightness_.has_value() && this->parent_->remote_values.get_color_brightness() == 0.0f)
       this->color_brightness_ = optional<float>(1.0f);
-  }
+  }*/
 
   // Create color values for the light with this call applied.
   auto v = this->parent_->remote_values;
@@ -334,21 +337,23 @@ LightColorValues LightCall::validate_() {
 }
 void LightCall::transform_parameters_() {
   auto traits = this->parent_->get_traits();
+  ESP_LOGW(TAG, "wish I was Setting cold/warm white channels using white/color temperature values.");
 
   // Allow CWWW modes to be set with a white value and/or color temperature. This is used by HA,
   // which doesn't support CWWW modes (yet?), and for compatibility with the pre-colormode model,
   // as CWWW and RGBWW lights used to represent their values as white + color temperature.
-  if (((this->white_.has_value() && *this->white_ > 0.0f) || this->color_temperature_.has_value()) &&  //
-      (*this->color_mode_ & ColorCapability::COLD_WARM_WHITE) &&                                       //
-      !(*this->color_mode_ & ColorCapability::WHITE) &&                                                //
-      !(*this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) &&                                    //
+  if ((*this->color_mode_ & ColorCapability::COLOR_TEMPERATURE) &&                                    //
       traits.get_min_mireds() > 0.0f && traits.get_max_mireds() > 0.0f) {
     ESP_LOGD(TAG, "'%s' - Setting cold/warm white channels using white/color temperature values.",
              this->parent_->get_name().c_str());
     auto current_values = this->parent_->remote_values;
     if (this->color_temperature_.has_value()) {
-      const float white =
+      ESP_LOGW(TAG, "Color Temperature has value");
+      const float whitenot =
           this->white_.value_or(fmaxf(current_values.get_cold_white(), current_values.get_warm_white()));
+      const float white = current_values.get_brightness();
+
+      ESP_LOGD(TAG, "White: %f Brightness: %f", whitenot, white);
       const float color_temp = clamp(*this->color_temperature_, traits.get_min_mireds(), traits.get_max_mireds());
       const float ww_fraction =
           (color_temp - traits.get_min_mireds()) / (traits.get_max_mireds() - traits.get_min_mireds());
@@ -357,6 +362,7 @@ void LightCall::transform_parameters_() {
       this->cold_white_ = white * gamma_uncorrect(cw_fraction / max_cw_ww, this->parent_->get_gamma_correct());
       this->warm_white_ = white * gamma_uncorrect(ww_fraction / max_cw_ww, this->parent_->get_gamma_correct());
     } else {
+      ESP_LOGW(TAG, "Color Temperature does not have value");
       const float max_cw_ww = std::max(current_values.get_warm_white(), current_values.get_cold_white());
       this->cold_white_ = *this->white_ * current_values.get_cold_white() / max_cw_ww;
       this->warm_white_ = *this->white_ * current_values.get_warm_white() / max_cw_ww;
@@ -538,13 +544,19 @@ LightCall &LightCall::set_color_temperature_if_supported(float color_temperature
   return *this;
 }
 LightCall &LightCall::set_cold_white_if_supported(float cold_white) {
-  if (this->get_active_color_mode_() & ColorCapability::COLD_WARM_WHITE)
+    ESP_LOGW(TAG, "trying to set cold white");
+  if (this->get_active_color_mode_() & ColorCapability::COLD_WARM_WHITE ||
+      this->get_active_color_mode_() & ColorCapability::COLOR_TEMPERATURE)
     this->set_cold_white(cold_white);
+    ESP_LOGW(TAG, "setting cold white since it is supported");
   return *this;
 }
 LightCall &LightCall::set_warm_white_if_supported(float warm_white) {
-  if (this->get_active_color_mode_() & ColorCapability::COLD_WARM_WHITE)
+    ESP_LOGW(TAG, "trying to set warm white");
+  if (this->get_active_color_mode_() & ColorCapability::COLD_WARM_WHITE ||
+      this->get_active_color_mode_() & ColorCapability::COLOR_TEMPERATURE)
     this->set_warm_white(warm_white);
+    ESP_LOGW(TAG, "setting warm white since it is supported");
   return *this;
 }
 LightCall &LightCall::set_state(optional<bool> state) {
