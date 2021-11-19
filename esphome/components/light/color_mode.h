@@ -66,13 +66,9 @@ enum class ColorMode : uint8_t {
   RGB_WHITE =
       (uint8_t)(ColorCapability::ON_OFF | ColorCapability::BRIGHTNESS | ColorCapability::RGB | ColorCapability::WHITE),
   /// RGB color output and a separate white output with controllable color temperature.
-  /*RGB_COLOR_TEMPERATURE = (uint8_t)(ColorCapability::ON_OFF | ColorCapability::BRIGHTNESS | ColorCapability::RGB |
-                                    ColorCapability::WHITE | ColorCapability::COLOR_TEMPERATURE),*/
-  RGB_COLOR_TEMPERATURE = (uint8_t)(ColorCapability::ON_OFF | ColorCapability::RGB |
-                                    ColorCapability::WHITE),
+  RGB_COLOR_TEMPERATURE = (uint8_t)(ColorCapability::ON_OFF | ColorCapability::BRIGHTNESS | ColorCapability::RGB |
+                                    ColorCapability::WHITE | ColorCapability::COLOR_TEMPERATURE),
   /// RGB color output, and separate cold and warm white outputs.
-  /*RGB_COLD_WARM_WHITE = (uint8_t)(ColorCapability::ON_OFF | ColorCapability::BRIGHTNESS | ColorCapability::RGB |
-                                  ColorCapability::COLD_WARM_WHITE),*/
   RGB_COLD_WARM_WHITE = (uint8_t)(ColorCapability::ON_OFF | ColorCapability::BRIGHTNESS | ColorCapability::RGB |
                                   ColorCapability::COLD_WARM_WHITE),
 };
